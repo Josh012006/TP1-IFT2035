@@ -16,11 +16,13 @@ Le langage Psil supporte :
 - Les expressions conditionnelles sous forme de `filter` (équivalent de `if`).
 
 ## Structure du projet
+```
 ├── psil.hs            # Code source Haskell fourni ; à compléter (s2l et eval)
 ├── exemples.psil      # Un fichier qui contient un exemple de code psil pour expliquer la syntaxe
 ├── tests.psil         # Fichier de tests Psil : contient ≥ 5 exemples commentés
 ├── rapport.tex        # Rapport (LaTeX) décrivant l’expérience et les choix
 └── README.md          # Ce fichier
+```
 
 ## Compilation et exécution
 ```bash
