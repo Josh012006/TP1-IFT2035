@@ -277,9 +277,32 @@ env0 = [("true", valbool True),
 -- La fonction d'évaluation principale.
 eval :: Env -> Lexp -> Value
 eval _ (Lnum n) = Vnum n
-eval env (Lvar v) = envLookup v env
-eval env (Labs v exp) = 
 
+eval env (Lvar v) = envLookup v env
+
+eval env (Labs _ e) = Vprim (\x -> eval env e)
+
+eval env (Lapply fun actual) = case eval env fun of
+    Vprim f -> f (eval env actual)
+    _ -> error ("Une fonction était attendue.")
+
+eval env (Lnew cons es) = Vcons cons (map (eval env) es)
+
+eval _ (Lfilter _ []) = error ("Aucun filtre applicable.")
+eval env (Lfilter e (b:bs)) = case b of
+    (Nothing, epat) -> eval env epat
+    (Just (cons, vs), epat) -> case eval env e of
+        Vcons cons1 values -> if cons == cons1 && length vs == length values 
+            then let env' = [(var, value) | var <- vs, value <- values] ++ env 
+                 in eval env' epat 
+            else eval env (Lfilter e bs)
+        _ -> error ("Constructeur non défini: " ++ show (Just (cons, vs)))
+
+eval env (Ldef ds e) = let 
+                         env' = (map (\(x, y) -> (x, eval env y)) ds) ++ env 
+                       in eval env' e
+
+-- Une fonction pour chercher une valeur dans un environnement --
 envLookup :: Var -> Env -> Value
 envLookup v [] = error ("Variable non définie: " ++ v)
 envLookup v (x:env) = if v == fst x then snd x else envLookup v env
