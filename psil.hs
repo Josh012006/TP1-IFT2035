@@ -277,7 +277,12 @@ env0 = [("true", valbool True),
 -- La fonction d'évaluation principale.
 eval :: Env -> Lexp -> Value
 eval _ (Lnum n) = Vnum n
--- ¡¡¡ COMPLETER ICI !!! --
+eval env (Lvar v) = envLookup v env
+eval env (Labs v exp) = 
+
+envLookup :: Var -> Env -> Value
+envLookup v [] = error ("Variable non définie: " ++ v)
+envLookup v (x:env) = if v == fst x then snd x else envLookup v env
 
 ---------------------------------------------------------------------------
 -- Toplevel                                                              --
