@@ -213,31 +213,56 @@ data Lexp = Lnum Int                    -- Constante entière.
 
 -- Première passe simple qui analyse un Sexp et construit une Lexp équivalente.
 s2l :: Sexp -> Lexp
+-- Cas de base
 s2l (Snum n) = Lnum n
-
 s2l (Ssym s) = Lvar s
 
+
 -- Abstraction currifiée
-s2l (Scons (Scons (Scons Snil (Ssym "abs"))
+s2l (Scons (Scons (Scons Snil (Ssym "abs"))  -- (abs x1 e)
                   (Scons Snil (Ssym arg)))
             body) = Labs arg (s2l body)
--- élimination du sucre syntaxique
+-- élimination du sucre syntaxique:
+-- (abs (x1 ... xn) e) ⇐⇒ (abs (x1) ... (abs (xn) e)..)
+-- ⇐⇒ (abs (xn) ... (abs (x1) e)..)
 s2l (Scons (Scons (Scons Snil (Ssym "abs")) 
-                  (Scons e1 (Scons Snil (Ssym argn))))
+                  (Scons xs (Scons Snil (Ssym argn))))
             body) = Labs argn (s2l 
                         (Scons (Scons (Scons Snil (Ssym "abs"))
-                                      (e1))
+                                      (xs))
                         body)
                     )
 
+
 -- Ajout de déclarations locales
-s2l (Scons (Scons (Scons Snil (Ssym "def"))
-                  (Scons Snil (Ssym arg)))
-           body)
+s2l (Scons (Scons (Scons Snil (Ssym "def"))   -- (def (x e) body)
+                  (Scons (Scons Snil (Ssym arg)) (defarg)))
+            body) = Ldef [(arg, s2l defarg)] (s2l body)
+
+s2l (Scons (Scons (Scons Snil (Ssym "def"))   -- (def (x (x1...xn) e) body)
+                  (Scons (Scons (Scons Snil (Ssym arg)) xs) (defarg)))
+            body) = Ldef [(arg, s2l abstraction)] (s2l body)
+                    where abstraction = (Scons (Scons (Scons Snil (Ssym "abs")) 
+                                                      (xs))
+                                                defarg) -- élimination du sucre
+                    -- syntaxique: (x (x1 ... xn) e) ⇐⇒ (x (abs (x1 ... xn) e))
+
+-- Cas général de def:
+-- (def (d1 ... dn) e) ⇐⇒ (def (d1) ... (def (dn) e)..)
+--  ⇐⇒ (def (dn) ... (def (d1) e)..)
+s2l (Scons (Scons (Scons Snil (Ssym "def"))   -- (def (d1...dn) body)
+                  (Scons ds (Scons left (defarg))))  -- dn ⇐⇒ (left e)
+            body) = s2l (Scons (Scons (Scons Snil (Ssym "def")) 
+                                      (Scons left (defarg)))
+                                body')
+                        where body' = (Scons (Scons (Scons Snil (Ssym "def"))
+                                                    (ds))
+                                            body)
 
 
 -- Appel currifié de fonction
 s2l (Scons exp actual) = Lapply (s2l exp) (s2l actual)
+
 
 -- Expression onconnue 
 s2l se = error ("Expression Psil inconnue: " ++ (showSexp se))
