@@ -214,11 +214,32 @@ data Lexp = Lnum Int                    -- Constante entière.
 -- Première passe simple qui analyse un Sexp et construit une Lexp équivalente.
 s2l :: Sexp -> Lexp
 s2l (Snum n) = Lnum n
+
 s2l (Ssym s) = Lvar s
+
+-- Abstraction currifiée
 s2l (Scons (Scons (Scons Snil (Ssym "abs"))
                   (Scons Snil (Ssym arg)))
-           body) = Labs arg (s2l body)
--- ¡¡COMPLÉTER ICI!!
+            body) = Labs arg (s2l body)
+-- élimination du sucre syntaxique
+s2l (Scons (Scons (Scons Snil (Ssym "abs")) 
+                  (Scons e1 (Scons Snil (Ssym argn))))
+            body) = Labs argn (s2l 
+                        (Scons (Scons (Scons Snil (Ssym "abs"))
+                                      (e1))
+                        body)
+                    )
+
+-- Ajout de déclarations locales
+s2l (Scons (Scons (Scons Snil (Ssym "def"))
+                  (Scons Snil (Ssym arg)))
+           body)
+
+
+-- Appel currifié de fonction
+s2l (Scons exp actual) = Lapply (s2l exp) (s2l actual)
+
+-- Expression onconnue 
 s2l se = error ("Expression Psil inconnue: " ++ (showSexp se))
 
 ---------------------------------------------------------------------------
@@ -280,7 +301,7 @@ eval _ (Lnum n) = Vnum n
 
 eval env (Lvar v) = envLookup v env
 
-eval env (Labs _ e) = Vprim (\x -> eval env e)
+eval env (Labs arg e) = Vprim (\x -> eval ((arg, x) : env) e)
 
 eval env (Lapply fun actual) = case eval env fun of
     Vprim f -> f (eval env actual)
