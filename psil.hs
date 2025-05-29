@@ -235,29 +235,19 @@ s2l (Scons (Scons (Scons Snil (Ssym "abs"))
 
 
 -- Ajout de déclarations locales
-s2l (Scons (Scons (Scons Snil (Ssym "def"))   -- (def (x e) body)
-                  (Scons (Scons Snil (Ssym arg)) (defarg)))
-            body) = Ldef [(arg, s2l defarg)] (s2l body)
-
-s2l (Scons (Scons (Scons Snil (Ssym "def"))   -- (def (x (x1...xn) e) body)
-                  (Scons (Scons (Scons Snil (Ssym arg)) xs) (defarg)))
-            body) = Ldef [(arg, s2l abstraction)] (s2l body)
-                    where abstraction = (Scons (Scons (Scons Snil (Ssym "abs")) 
+defs (Scons (Scons Snil (Ssym arg)) (defarg)) = [(arg, s2l defarg)] -- (x e)
+defs (Scons (Scons (Scons Snil (Ssym arg)) xs) (defarg)) = let 
+    abstraction = (Scons (Scons (Scons Snil (Ssym "abs"))  -- (x (x1...xn) e)
                                                       (xs))
-                                                defarg) -- élimination du sucre
-                    -- syntaxique: (x (x1 ... xn) e) ⇐⇒ (x (abs (x1 ... xn) e))
+                                                defarg)
+    in [(arg, s2l abstraction)]
+defs (Scons ds d) = (defs ds) ++ (defs d)    -- (d1...dn)
 
--- Cas général de def:
--- (def (d1 ... dn) e) ⇐⇒ (def (d1) ... (def (dn) e)..)
---  ⇐⇒ (def (dn) ... (def (d1) e)..)
 s2l (Scons (Scons (Scons Snil (Ssym "def"))   -- (def (d1...dn) body)
-                  (Scons ds (Scons left (defarg))))  -- dn ⇐⇒ (left e)
-            body) = s2l (Scons (Scons (Scons Snil (Ssym "def")) 
-                                      (Scons left (defarg)))
-                                body')
-                        where body' = (Scons (Scons (Scons Snil (Ssym "def"))
-                                                    (ds))
-                                            body)
+                  (ds)) body) = Ldef (defs ds) body 
+
+-- Appel de constructeur
+s2l
 
 
 -- Appel currifié de fonction
