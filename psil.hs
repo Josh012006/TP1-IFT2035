@@ -235,27 +235,67 @@ s2l (Scons (Scons (Scons Snil (Ssym "abs"))
 
 
 -- Ajout de déclarations locales
-defs (Scons (Scons Snil (Ssym arg)) (defarg)) = [(arg, s2l defarg)] -- (x e)
-defs (Scons (Scons (Scons Snil (Ssym arg)) xs) (defarg)) = let 
-    abstraction = (Scons (Scons (Scons Snil (Ssym "abs"))  -- (x (x1...xn) e)
-                                                      (xs))
-                                                defarg)
-    in [(arg, s2l abstraction)]
-defs (Scons ds d) = (defs ds) ++ (defs d)    -- (d1...dn)
-
-s2l (Scons (Scons (Scons Snil (Ssym "def"))   -- (def (d1...dn) body)
-                  (ds)) body) = Ldef (defs ds) body 
-
--- Appel de constructeur
-s2l
+s2l (Scons (Scons (Scons Snil (Ssym "def")) (ds)) body) = let 
+    defs (Scons (Scons Snil (Ssym arg)) (defarg)) = [(arg, s2l defarg)] -- (x e)
+    defs (Scons (Scons (Scons Snil (Ssym arg)) xs) (defarg)) = let 
+        abstraction = (Scons (Scons (Scons Snil (Ssym "abs"))(xs)) defarg)
+        in [(arg, s2l abstraction)]              -- (x (x1...xn) e)
+    defs (Scons ds' d) = (defs ds') ++ (defs d)    -- (d1...dn)
+    defs _ = error ("Expression Psil inconnue: " ++ 
+                showSexp (Scons (Scons (Scons Snil (Ssym "def")) (ds)) body))
+    in Ldef (defs ds) (s2l body) 
 
 
--- Appel currifié de fonction
-s2l (Scons exp actual) = Lapply (s2l exp) (s2l actual)
+-- Expression if 
+-- élimination du sucre syntaxique: 
+-- (if e et ee) ⇐⇒ (filter e (true: et) (false: ee))
+s2l (Scons (Scons (Scons (Scons Snil (Ssym "if")) e) et) ee) = 
+    s2l (Scons (Scons (Scons (Scons Snil (Ssym "filter")) e) 
+                      (Scons (Scons Snil (Ssym "true")) et)) 
+                (Scons (Scons Snil (Ssym "false")) ee))
 
 
--- Expression onconnue 
-s2l se = error ("Expression Psil inconnue: " ++ (showSexp se))
+-- Appel de constructeur, Filtrage, Appel de fonction currifié
+s2l se = 
+    let 
+        identify (Scons (Scons Snil (Ssym "new")) c) = ("new", (c, []))
+        identify (Scons (Scons Snil (Ssym "filter")) e) = ("filter", (e, []))
+        identify (Scons rest e) = let intern = identify rest 
+                                      left = fst intern
+                                      right = snd intern
+                                  in (left, (fst right, snd right ++ [e])) 
+        identify _ = ("", ((Ssym ""), []))
+    in case identify se of
+        ("new", ((Ssym c), es)) -> if c /= "" then Lnew c (map s2l es) else
+            error ("Expression Psil inconnue: " ++ (showSexp se))
+        
+        ("filter", (expr, bs)) -> Lfilter (s2l expr) (map branch bs) where
+            branch (Scons (Scons Snil (Ssym "_")) e) = (Nothing, s2l e) 
+            branch (Scons (Scons Snil (Ssym c)) e) = (Just (c, []), s2l e)
+            branch (Scons filt e) = let 
+                cons = extract filt
+                extract (Scons (Scons Snil (Ssym c)) (Ssym x)) = (c, [x])
+                extract (Scons rest (Ssym xn)) = let left = extract rest
+                                                 in (fst left, snd left ++ [xn])
+                extract c = 
+                    error ("Constructeur inconnu: " ++ (showSexp c))
+                in (Just (fst cons, snd cons), s2l e)
+            branch b = error ("Branche de filtrage inconnue: " ++ (showSexp b))
+        
+        ("", (_, _)) -> Lapply (s2l exprs) (s2l actual) 
+            where
+                parts = decompose se
+                decompose (Scons es en) = (es, en)
+                decompose _ = 
+                    error ("Expression Psil inconnue: " ++ (showSexp se))
+                exprs = fst parts
+                actual = snd parts
+
+        _ -> error ("Expression Psil inconnue: " ++ (showSexp se))
+
+
+-- Expression inconnue 
+-- s2l se = error ("Expression Psil inconnue: " ++ (showSexp se))
 
 ---------------------------------------------------------------------------
 -- Évaluateur                                                            --
