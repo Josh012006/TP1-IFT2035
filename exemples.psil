@@ -4,6 +4,8 @@
 +                                       ; ↝ <function>
 (+ 2 4)                                 ; ↝ 6
 
+
+
 (def ((even (xs)
        (filter xs (nil: 0) ((cons: x xs) (odd xs))))
       (odd (xs)

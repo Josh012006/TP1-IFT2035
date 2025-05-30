@@ -235,14 +235,14 @@ s2l (Scons (Scons (Scons Snil (Ssym "abs"))
 
 
 -- Ajout de déclarations locales
-s2l (Scons (Scons (Scons Snil (Ssym "def")) (ds)) body) = let 
-    defs (Scons (Scons Snil (Ssym arg)) (defarg)) = [(arg, s2l defarg)] -- (x e)
-    defs (Scons (Scons (Scons Snil (Ssym arg)) xs) (defarg)) = let 
+s2l (Scons (Scons (Scons Snil (Ssym "def")) ds) body) = let 
+    defs (Scons (Scons Snil (Ssym arg)) defarg) = [(arg, s2l defarg)] -- (x e)
+    defs (Scons (Scons (Scons Snil (Ssym arg)) xs) defarg) = let 
         abstraction = (Scons (Scons (Scons Snil (Ssym "abs"))(xs)) defarg)
         in [(arg, s2l abstraction)]              -- (x (x1...xn) e)
-    defs (Scons ds' d) = (defs ds') ++ (defs d)    -- (d1...dn)
-    defs _ = error ("Expression Psil inconnue: " ++ 
-                showSexp (Scons (Scons (Scons Snil (Ssym "def")) (ds)) body))
+    defs (Scons (Scons Snil (ds')) d) = (defs ds') ++ (defs d)   -- (d1...dn)
+    defs todef = error ("Expression Psil inconnue: " ++ showSexp todef)
+                --showSexp (Scons (Scons (Scons Snil (Ssym "def")) (ds)) body))
     in Ldef (defs ds) (s2l body) 
 
 
@@ -285,6 +285,7 @@ s2l se =
         ("", (_, _)) -> Lapply (s2l exprs) (s2l actual) 
             where
                 parts = decompose se
+                decompose (Scons (Scons Snil (Ssym fun)) e2) = (Ssym fun, e2)
                 decompose (Scons es en) = (es, en)
                 decompose _ = 
                     error ("Expression Psil inconnue: " ++ (showSexp se))
