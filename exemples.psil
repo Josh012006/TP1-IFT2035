@@ -4,7 +4,9 @@
 +                                       ; ↝ <function>
 (+ 2 4)                                 ; ↝ 6
 
-
+(def ((x 2)
+      (y (+ 5 x)))
+     (+ 8 y))
 
 (def ((even (xs)
        (filter xs (nil: 0) ((cons: x xs) (odd xs))))

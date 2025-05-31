@@ -240,9 +240,9 @@ s2l (Scons (Scons (Scons Snil (Ssym "def")) ds) body) = let
     defs (Scons (Scons (Scons Snil (Ssym arg)) xs) defarg) = let 
         abstraction = (Scons (Scons (Scons Snil (Ssym "abs"))(xs)) defarg)
         in [(arg, s2l abstraction)]              -- (x (x1...xn) e)
-    defs (Scons (Scons Snil (ds')) d) = (defs ds') ++ (defs d)   -- (d1...dn)
+    defs (Scons Snil d) = defs d   -- parenthèses excessives
+    defs (Scons ds' d) = (defs ds') ++ (defs d)   -- (d1...dn)
     defs todef = error ("Expression Psil inconnue: " ++ showSexp todef)
-                --showSexp (Scons (Scons (Scons Snil (Ssym "def")) (ds)) body))
     in Ldef (defs ds) (s2l body) 
 
 
@@ -277,6 +277,7 @@ s2l se =
                 extract (Scons (Scons Snil (Ssym c)) (Ssym x)) = (c, [x])
                 extract (Scons rest (Ssym xn)) = let left = extract rest
                                                  in (fst left, snd left ++ [xn])
+                extract (Scons Snil c) = extract c -- parenthèses excessives
                 extract c = 
                     error ("Constructeur inconnu: " ++ (showSexp c))
                 in (Just (fst cons, snd cons), s2l e)
@@ -355,7 +356,10 @@ env0 = [("true", valbool True),
 eval :: Env -> Lexp -> Value
 eval _ (Lnum n) = Vnum n
 
-eval env (Lvar v) = envLookup v env
+eval env (Lvar var) = let 
+    envLookup v [] = error ("Variable non définie: " ++ v)
+    envLookup v (x:env') = if v == fst x then snd x else envLookup v env'
+    in envLookup var env
 
 eval env (Labs arg e) = Vprim (\x -> eval ((arg, x) : env) e)
 
@@ -373,16 +377,12 @@ eval env (Lfilter e (b:bs)) = case b of
             then let env' = [(var, value) | var <- vs, value <- values] ++ env 
                  in eval env' epat 
             else eval env (Lfilter e bs)
-        _ -> error ("Constructeur non défini: " ++ show (Just (cons, vs)))
+        _ -> error ("Constructeur inconnu: " ++ show (Just (cons, vs)))
 
 eval env (Ldef ds e) = let 
                          env' = (map (\(x, y) -> (x, eval env y)) ds) ++ env 
                        in eval env' e
 
--- Une fonction pour chercher une valeur dans un environnement --
-envLookup :: Var -> Env -> Value
-envLookup v [] = error ("Variable non définie: " ++ v)
-envLookup v (x:env) = if v == fst x then snd x else envLookup v env
 
 ---------------------------------------------------------------------------
 -- Toplevel                                                              --
