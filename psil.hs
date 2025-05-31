@@ -220,9 +220,13 @@ s2l (Scons Snil e) = s2l e -- éliminer les parenthèses inutiles
 
 
 -- Abstraction currifiée
-s2l (Scons (Scons (Scons Snil (Ssym "abs"))  -- (abs x1 e)
+ -- (abs x1 e)
+s2l (Scons (Scons (Scons Snil (Ssym "abs"))
                   (Ssym arg))
-            body) = error("here") --Labs arg (s2l body)
+            body) = Labs arg (s2l body)
+s2l (Scons (Scons (Scons Snil (Ssym "abs"))  -- (abs x1 e)
+                  (Scons Snil (Ssym arg))) -- paranthèses excessives
+            body) = Labs arg (s2l body)
 -- élimination du sucre syntaxique:
 -- (abs (x1 ... xn) e) ⇐⇒ (abs (x1) ... (abs (xn) e)..)
 s2l (Scons (Scons (Scons Snil (Ssym "abs")) 

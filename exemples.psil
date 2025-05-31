@@ -1,20 +1,20 @@
 ;;; Quelques exemples.                  -*- mode: lisp-data; coding: utf-8 -*-
 
-;2                                       ; ↝ 2
-;+                                       ; ↝ <function>
-;(+ 2 4)                                 ; ↝ 6
+2                                       ; ↝ 2
++                                       ; ↝ <function>
+(+ 2 4)                                 ; ↝ 6
 
-;(def ((x 2)
-      ;(y (+ 5 x)))
-     ;(+ 8 y))
+(def ((x 2)
+      (y (+ 5 x)))
+     (+ 8 y))
 
-;(def (x 7)
-  ;(if (== x 5) 6 8))
+(def (x 7)
+     (if (== x 5) 6 8))
 
-;(filter (new cons: 8 9) ((cons: x1 x2) (x1)))
+(filter (new cons: 8 9) ((cons: x1 x2) (x1)))
 
-;(def (fact x (if (<= x 1) 1 (* x (fact (- x 1)))))
-     ;(fact 20))
+(def (fact x (if (<= x 1) 1 (* x (fact (- x 1)))))
+     (fact 5))
 
 
 (def ((even (xs)
