@@ -13,8 +13,8 @@
 
 ;(filter (new cons: 8 9) ((cons: x1 x2) (x1)))
 
-(def (fact x (if (<= x 1) 1 (* x (fact (x - 1)))))
-     (fact 5))
+;(def (fact x (if (<= x 1) 1 (* x (fact (- x 1)))))
+     ;(fact 20))
 
 
 (def ((even (xs)

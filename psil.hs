@@ -222,17 +222,17 @@ s2l (Scons Snil e) = s2l e -- éliminer les parenthèses inutiles
 -- Abstraction currifiée
 s2l (Scons (Scons (Scons Snil (Ssym "abs"))  -- (abs x1 e)
                   (Ssym arg))
-            body) = Labs arg (s2l body)
+            body) = error("here") --Labs arg (s2l body)
 -- élimination du sucre syntaxique:
 -- (abs (x1 ... xn) e) ⇐⇒ (abs (x1) ... (abs (xn) e)..)
--- ⇐⇒ (abs (xn) ... (abs (x1) e)..)
 s2l (Scons (Scons (Scons Snil (Ssym "abs")) 
                   (Scons xs (Scons Snil (Ssym argn))))
-            body) = Labs argn (s2l 
-                        (Scons (Scons (Scons Snil (Ssym "abs"))
+            body) = let body' = (Scons (Scons (Scons Snil (Ssym "abs"))
+                                              (Ssym argn))
+                                    body)
+                    in s2l (Scons (Scons (Scons Snil (Ssym "abs"))
                                       (xs))
-                        body)
-                    )
+                                body')
 
 
 -- Ajout de déclarations locales
@@ -250,7 +250,7 @@ s2l (Scons (Scons (Scons Snil (Ssym "def")) ds) body) = let
 -- Expression if 
 -- élimination du sucre syntaxique: 
 -- (if e et ee) ⇐⇒ (filter e (true: et) (false: ee))
-s2l (Scons (Scons (Scons (Scons Snil (Ssym "if")) e) et) ee) = -- Scons Snil (Snum 6)
+s2l (Scons (Scons (Scons (Scons Snil (Ssym "if")) e) et) ee) =
     s2l (Scons (Scons (Scons (Scons Snil (Ssym "filter")) e) 
                       (Scons (Scons Snil (Ssym "true:")) et)) 
                 (Scons (Scons Snil (Ssym "false:")) ee))
@@ -393,8 +393,9 @@ eval env (Lfilter e (b:bs)) = case b of
 
 eval env (Ldef locals e) = let
     env' [] acc = acc
-    env' (d:ds) acc = env' ds ((fst d, eval acc (snd d)):acc) 
-    in eval (env' locals env) e
+    env' (d:ds) acc = env' ds ((fst d, eval newEnv (snd d)):acc) 
+    newEnv = env' locals env
+    in eval newEnv e
 
 
 ---------------------------------------------------------------------------
