@@ -216,6 +216,7 @@ s2l :: Sexp -> Lexp
 -- Cas de base
 s2l (Snum n) = Lnum n
 s2l (Ssym s) = Lvar s
+s2l (Scons Snil e) = s2l e -- éliminer les parenthèses inutiles
 
 
 -- Abstraction currifiée
@@ -241,7 +242,7 @@ s2l (Scons (Scons (Scons Snil (Ssym "def")) ds) body) = let
         abstraction = (Scons (Scons (Scons Snil (Ssym "abs"))(xs)) defarg)
         in [(arg, s2l abstraction)]              -- (x (x1...xn) e)
     defs (Scons Snil d) = defs d   -- parenthèses excessives
-    defs (Scons ds' d) = (defs ds') ++ (defs d)   -- (d1...dn)
+    defs (Scons ds' d) =  (defs ds') ++ (defs d)   -- (d1...dn)
     defs todef = error ("Expression Psil inconnue: " ++ showSexp todef)
     in Ldef (defs ds) (s2l body) 
 
@@ -249,10 +250,10 @@ s2l (Scons (Scons (Scons Snil (Ssym "def")) ds) body) = let
 -- Expression if 
 -- élimination du sucre syntaxique: 
 -- (if e et ee) ⇐⇒ (filter e (true: et) (false: ee))
-s2l (Scons (Scons (Scons (Scons Snil (Ssym "if")) e) et) ee) = 
+s2l (Scons (Scons (Scons (Scons Snil (Ssym "if")) e) et) ee) = -- Scons Snil (Snum 6)
     s2l (Scons (Scons (Scons (Scons Snil (Ssym "filter")) e) 
-                      (Scons (Scons Snil (Ssym "true")) et)) 
-                (Scons (Scons Snil (Ssym "false")) ee))
+                      (Scons (Scons Snil (Ssym "true:")) et)) 
+                (Scons (Scons Snil (Ssym "false:")) ee))
 
 
 -- Appel de constructeur, Filtrage, Appel de fonction currifié
@@ -365,11 +366,12 @@ eval env (Labs arg e) = Vprim (\x -> eval ((arg, x) : env) e)
 
 eval env (Lapply fun actual) = case eval env fun of
     Vprim f -> f (eval env actual)
-    _ -> error ("Une fonction était attendue.")
+    _ -> error ("Une fonction était attendue: " ++ show (Lapply fun actual))
 
 eval env (Lnew cons es) = Vcons cons (map (eval env) es)
 
-eval _ (Lfilter _ []) = error ("Aucun filtre applicable.")
+eval env (Lfilter e []) = error ("Aucun filtre applicable: " ++ show (eval env e))
+-- eval env (Lfilter e (b:bs)) = error (show (Lfilter e (b:bs)))
 eval env (Lfilter e (b:bs)) = case b of
     (Nothing, epat) -> eval env epat
     (Just (cons, vs), epat) -> case eval env e of
@@ -377,11 +379,12 @@ eval env (Lfilter e (b:bs)) = case b of
             then let env' = [(var, value) | var <- vs, value <- values] ++ env 
                  in eval env' epat 
             else eval env (Lfilter e bs)
-        _ -> error ("Constructeur inconnu: " ++ show (Just (cons, vs)))
+        _ -> eval env (Lfilter e bs)
 
-eval env (Ldef ds e) = let 
-                         env' = (map (\(x, y) -> (x, eval env y)) ds) ++ env 
-                       in eval env' e
+eval env (Ldef locals e) = let
+    env' [] acc = acc
+    env' (d:ds) acc = env' ds ((fst d, eval acc (snd d)):acc) 
+    in eval (env' locals env) e
 
 
 ---------------------------------------------------------------------------
