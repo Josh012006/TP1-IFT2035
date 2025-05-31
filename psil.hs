@@ -221,7 +221,7 @@ s2l (Scons Snil e) = s2l e -- éliminer les parenthèses inutiles
 
 -- Abstraction currifiée
 s2l (Scons (Scons (Scons Snil (Ssym "abs"))  -- (abs x1 e)
-                  (Scons Snil (Ssym arg)))
+                  (Ssym arg))
             body) = Labs arg (s2l body)
 -- élimination du sucre syntaxique:
 -- (abs (x1 ... xn) e) ⇐⇒ (abs (x1) ... (abs (xn) e)..)
@@ -239,7 +239,7 @@ s2l (Scons (Scons (Scons Snil (Ssym "abs"))
 s2l (Scons (Scons (Scons Snil (Ssym "def")) ds) body) = let 
     defs (Scons (Scons Snil (Ssym arg)) defarg) = [(arg, s2l defarg)] -- (x e)
     defs (Scons (Scons (Scons Snil (Ssym arg)) xs) defarg) = let 
-        abstraction = (Scons (Scons (Scons Snil (Ssym "abs"))(xs)) defarg)
+        abstraction = (Scons (Scons (Scons Snil (Ssym "abs")) xs) defarg)
         in [(arg, s2l abstraction)]              -- (x (x1...xn) e)
     defs (Scons Snil d) = defs d   -- parenthèses excessives
     defs (Scons ds' d) =  (defs ds') ++ (defs d)   -- (d1...dn)
@@ -357,21 +357,26 @@ env0 = [("true", valbool True),
 eval :: Env -> Lexp -> Value
 eval _ (Lnum n) = Vnum n
 
+
 eval env (Lvar var) = let 
     envLookup v [] = error ("Variable non définie: " ++ v)
     envLookup v (x:env') = if v == fst x then snd x else envLookup v env'
     in envLookup var env
 
+
 eval env (Labs arg e) = Vprim (\x -> eval ((arg, x) : env) e)
+
 
 eval env (Lapply fun actual) = case eval env fun of
     Vprim f -> f (eval env actual)
     _ -> error ("Une fonction était attendue: " ++ show (Lapply fun actual))
 
+
 eval env (Lnew cons es) = Vcons cons (map (eval env) es)
 
-eval env (Lfilter e []) = error ("Aucun filtre applicable: " ++ show (eval env e))
--- eval env (Lfilter e (b:bs)) = error (show (Lfilter e (b:bs)))
+
+eval env (Lfilter e []) = 
+    error ("Aucun filtre applicable: " ++ show (eval env e))
 eval env (Lfilter e (b:bs)) = case b of
     (Nothing, epat) -> eval env epat
     (Just (cons, vs), epat) -> case eval env e of
@@ -384,6 +389,7 @@ eval env (Lfilter e (b:bs)) = case b of
                  in eval (env' vs values env) epat
             else eval env (Lfilter e bs)
         _ -> eval env (Lfilter e bs)
+
 
 eval env (Ldef locals e) = let
     env' [] acc = acc
