@@ -376,8 +376,12 @@ eval env (Lfilter e (b:bs)) = case b of
     (Nothing, epat) -> eval env epat
     (Just (cons, vs), epat) -> case eval env e of
         Vcons cons1 values -> if cons == cons1 && length vs == length values 
-            then let env' = [(var, value) | var <- vs, value <- values] ++ env 
-                 in eval env' epat 
+            then let
+                    env' [] (_:_) _ = error ("Quelque chose s'est mal passé.")
+                    env' (_:_) [] _ = error ("Quelque chose s'est mal passé.")
+                    env' [] [] acc = acc
+                    env' (l:ls) (r:rs) acc = env' ls rs ((l, r):acc) 
+                 in eval (env' vs values env) epat
             else eval env (Lfilter e bs)
         _ -> eval env (Lfilter e bs)
 
