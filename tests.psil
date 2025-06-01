@@ -1,5 +1,13 @@
+;; Tester une définition de variables locales et les opérations
+;; primitives
+(def
+    ((x 5)
+    (y 4))
+  (+ (- (* x 3) (/ y 2)) 1))                         ; ↝ 14
 
-;; Test de filter et new
+
+
+;; Tester filter et new
 (filter
   (new pair 10 20)
   ((pair a b) (+ a b))
@@ -12,7 +20,7 @@
 
 
 
-;; Tester une fonction récursive , une définition de variable locale
+;; Tester une fonction récursive , une définition locale de fonction
 ;; et l'énoncé if
 ;; La fonction de fibonacci
 (def 
@@ -30,5 +38,3 @@
   (f 3))                                             ; ↝ 6
 
 
-
-;;
