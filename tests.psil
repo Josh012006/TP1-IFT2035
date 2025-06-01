@@ -1,0 +1,40 @@
+;; Tester une définition de variables locales et les opérations
+;; primitives
+(def
+    ((x 5)
+    (y 4))
+  (+ (- (* x 3) (/ y 2)) 1))                         ; ↝ 14
+
+
+
+;; Tester filter et new
+(filter
+  (new pair 10 20)
+  ((pair a b) (+ a b))
+  (_ 0))                                             ; ↝ 30
+
+
+
+;; Tester une abstraction et un appel de fonction currifié
+((abs (x y) (+ x y)) 3 4)                            ; ↝ 7
+
+
+
+;; Tester une fonction récursive , une définition locale de fonction
+;; et l'énoncé if
+;; La fonction de fibonacci
+(def 
+  (fib n (if (<= n 1) (n) (+ (fib (- n 1)) (fib (- n 2))) ))
+  (fib 9))                                           ; ↝ 34
+
+
+
+;; Tester une définition mutuellement récursive
+;; Le calcul de la factorielle
+(def
+  ( (f (abs n (if (< n 1) 1 (* n (g (- n 1))))))
+    (g (abs n (if (< n 1) 1 (* n (f (- n 1))))))
+  )
+  (f 3))                                             ; ↝ 6
+
+
