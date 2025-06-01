@@ -1,0 +1,71 @@
+\documentclass[11pt]{article}
+
+
+
+% Margins
+\topmargin=-0.45in
+\evensidemargin=0in
+\oddsidemargin=0in
+\textwidth=6.5in
+\textheight=9.0in
+\headsep=0.25in
+
+
+% Macros
+\newcommand{\eval}{\texttt{eval} }
+\newcommand{\stol}{\texttt{s2l} }
+
+
+
+\title{Rapport TP1 - IFT 2035}
+\author{ Noms et Matricules : \vspace{0.2cm}\\
+	Josué Mongan (20290870) - David Stanescu (20314518)}
+\date{Date - 01 juin 2025}
+
+
+
+
+\begin{document}
+\maketitle	
+\pagebreak
+
+Afin de réaliser le travail, la première étape pour nous était de comprendre l'énoncé et les tâches à accomplir. Ainsi, nous avons pris le temps de parcourir les données dans le but de comprendre la syntaxe du langage \texttt{Psil}, sa sémantique et aussi ce que faisaient exactement les fonctions \stol et \eval qui étaient requises de notre part.\\
+
+Après cela, nous avons décidé de notre méthode de travail. Elle est assez simple. Nous avons mis le projet en place sur un répertoire github. Chacun travaillait sur sa branche en essayant de compléter les fonctions \stol et \eval. En cas de blocage ou d'incompréhension, nous discutions à travers l'application Discord pour mutuellement avancer. Cela nous a permis d'avoir des approches différentes dans la rédaction du code sans pour autant prendre du retard puisque nous étions en communication permanente.\\
+
+Evidemment, pendant ce processus plusieurs difficultés ont rencontrées et plusieurs erreurs ont été faites.\\
+
+Les premières difficultés sont celles rencontrées pendant l'analyse de la donnée. En effet, au niveau de la syntaxe, nous n'avions pas compris facilement le rôle de l'abstraction et de l'appel de constructeur.
+
+Nous nous sommes questionnés sur le sens que prenait le mot abstraction dans notre contexte, puisqu'il représente un vaste champ d'élément en informatique. Nous nous demandions aussi, quelle était l'utilité de l'abstraction et où elle apparaitrait dans le code. Mais après avoir vu le sucre syntaxique pour la définition de fonctions, nous avons compris que l'abstraction était une autre manière de déclarer des variables muettes qui seraient utilisées dans le code.
+
+Pour l'appel de constructeur, une étude plus détaillée de l'exemple n°3 donné avec even et odd a permis de comprendre que son utilité principale était d'être utilisé dans une expression de type filter.\\
+
+
+Les difficultés qui ont suivi juste après étaient donc en lien avec l'écriture du code :
+\begin{itemize}
+	\item Nous avons décidé de nous concentrer premièrement sur la fonction \eval puisqu'on avait déjà rencontré plusieurs exercices de ce type en démonstration. L'objectif était d'avoir une version satisfaisante, avant de commencer à travailler sur \stol. Ça nous aiderait aussi à gagner en confiance pour la suite. 
+	
+	Le principal obstacle a été rencontré au niveau de l'évaluation des expressions de type \texttt{Ldef}. A cause de la possibilité d'avoir des définitions mutuellement récursives, il nous fallait trouver un moyen, lorsqu'on ajoutait une variable locale à notre environnement de lui permettre d'avoir accès aux définitions qui allaient venir après mais aussi d'avoir accès à elle-même pour les définitions récursives. Nous avons premièrement décidé d'utiliser une implémentation naïve qui prenait juste l'environnement appelant et d'y revenir après lorsque nous aurions mieux compris la totalité de \stol.
+	
+	\item Nous nous sommes donc attaqués à l'écriture de la fonction \stol. La première étape était de comprendre le passage du code \texttt{Psil} à une \texttt{Sexp}. Notamment, il nous fallait comprendre à quelle moment \texttt{Snil} intervenait pour pouvoir user d'un \textbf{pattern-matching} efficace. Le code prévoyait heureusement un exemple en commentaire juste en bas de définition de la \texttt{data Sexp}. Et après avoir expérimenté un peu aussi en suivant ce qu'on avait comme exemple, nous avions une meilleure compréhension du processus de passage de \texttt{Psil} à \texttt{Sexp}.
+	
+	\pagebreak
+	
+	\item Après avoir commencé à écrire \stol, nous avons rencontré un obstacle pour récupérer les $(x_1 \ldots x_n)$ dans les expressions comme $(abs \; (x_1 \ldots x_n) \; e)$ et $(def \; (d_1 \ldots d_n) \; e)$. L'option a été pour le premier d'utiliser l'élimination du sucre syntaxique pour définir des abstractions récursives et dans le deuxième cas de définir une fonction auxiliaire \texttt{defs} qui en utilisant aussi la récursion, cette fois-ci nous permettait d'extraire les définitions $(d_1 \ldots d_n)$.
+	
+	\item Une fois cette étape passées et les expressions basiques définies, le challenge était maintenant d'arriver à traiter des trois plus complexes : \texttt{new, filter} et \texttt{l'appel de fonction currifié}. La difficulté à ce niveau résidait dans le fait qu'il n'y avait pas comme pour les deux précédents des parenthèses qui délimiteraient chaque partie de l'expression. Il nous fallait donc un moyen de détecter qu'une \texttt{Sexp} quelconque contenait le mot-clé "new" ou "filter" ou encore aucun des deux ce qui résultait à un appel de fonction alors que ces mot-clé se trouveraient au coeur de l'expression. 
+	
+	La première étape a donc été de déplacé le traitement de ces types d'expressions vers la fin pour ne pas qu'elles cachent les autres dans le pattern-matching puisqu'elle étaient assez génériques. Ensuite, nous avons écrit la fonction \texttt{identify} qui se mettaient donc à la recherche des mots-clé de manière récursive tout en gardant pour des questions de performances une trace des paramètres rencontrés notamment les $(e_1 \ldots e_n) \;, (b_1 \ldots b_n)\;, (e_1, e_2 \ldots e_n)$. Une fois fait, la suite a été plus simple.
+	
+	\item La fonction \stol était donc complète ou du moins, on avait une première version qui semblait fonctionnelle donc il nous fallait revenir sur la question de l'évaluation des définitions mutuellement récursives. Nous avons premièrement tenté d'utiliser un accumulateur de telle manière que chaque définition, lors de son insertion dans l'environnement avait accès aux définitions précédentes. Mais cela ne résolvaient évidemment pas notre problème. Après plusieurs tests et erreurs, nous avons abouti à une solution qui était de définir notre nouvel environnement à part et de l'utiliser lui-même dans sa définition. A cause de l'évaluation paresseuse de \texttt{Haskell}, cela ne poserait pas de problème et chaque variable porterait donc maintenant une trace de toutes les définitions y compris elle-même.
+	
+	\item Maintenant que nous avions une version de \stol et de \eval, nous nous sommes lancés dans les tests en commençant par ceux de \texttt{exemples.psil}. Certains ont marché tandis qe d'autres ont demandé des modifications de code. Ensuite nous avons effectués nos propres tests notamment avec des fonctions comme la factoriel ou encore fibonacci et les autres types d'expressions. Une erreur qui revenait souvent était l'apparition de \textbf{parenthèses excessives}. C'était une surprise pour nous. En plus, nous n'étions pas en mesure de savoir si c'était dû au comportement des fonctions déjà fournies. Mais nous avons pris des précautions pour supprimer ou ignorer les parenthèses excessives.
+	
+\end{itemize}
+
+
+Une fois tout cela fini, nous avons rédigé proprement les tests dans le fichier \texttt{tests.psil}. C'est de cette manière que nous avons bouclé le travail.
+
+	
+\end{document}
