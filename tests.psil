@@ -1,0 +1,15 @@
+(filter
+  (new pair 10 20)
+  ((pair a b) (+ a b))
+  (_ 0))
+
+
+
+(def 
+  (fib n (if (<= n 1) (n) (+ (fib (- n 1)) (fib (- n 2))) ))
+  (fib 9))
+
+
+((abs (x y) (+ x y)) 3 4)
+
+
